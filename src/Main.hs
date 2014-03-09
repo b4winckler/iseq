@@ -4,24 +4,12 @@ import Control.Applicative ((<$>), (<*>), pure)
 import Options.Applicative ((<>), optional)
 import Options.Applicative (Parser, command, info,
                             execParser, strOption, help, switch, help, helper,
-                            fullDesc, progDesc, long, header,
-                            subparser, flag)
+                            fullDesc, progDesc, long, header, str,
+                            subparser, flag, value, argument, metavar)
 
-data IseqOptions = IseqOptions {
-      optVerbose :: Bool
-    , optOutput  :: Maybe String
-    , optCommand :: Command
-    } deriving (Show)
+import Options
+import Scan (scan)
 
-data Command =
-    CmdAlign { optAlignment :: Alignment }
-  | CmdMerge
-  deriving (Show)
-
-data Alignment =
-    GlobalAlignment
-  | LocalAlignment
-  deriving (Show, Eq)
 
 
 main :: IO ()
@@ -29,6 +17,11 @@ main = do
   o <- execParser (info (helper <*> parser)
       (fullDesc <> header "Tools for processing Illumina ?iSeq data"))
   print o
+
+  case optCommand o of
+    CmdScan input primer -> scan o input primer
+    _                    -> return ()
+
 
 parser :: Parser IseqOptions
 parser = IseqOptions
@@ -38,6 +31,7 @@ parser = IseqOptions
         command "align" (info alignOptParser $
             progDesc "Align against database")
     <>  command "merge" (info mergeOptParser $ progDesc "Merge paired reads")
+    <>  command "scan" (info scanOptParser $ progDesc "Scan for primer")
     )
 
 alignOptParser :: Parser Command
@@ -47,3 +41,9 @@ alignOptParser = CmdAlign
 
 mergeOptParser :: Parser Command
 mergeOptParser = pure CmdMerge
+
+scanOptParser :: Parser Command
+scanOptParser = CmdScan
+  <$> strOption (long "input" <> value "/dev/stdin"
+      <> help "Fasta file to scan")
+  <*> argument str (metavar "PRIMER" <> help "Primer sequence to scan for")
