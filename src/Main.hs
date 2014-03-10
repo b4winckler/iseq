@@ -19,7 +19,7 @@ main = do
   print o
 
   case optCommand o of
-    CmdScan input primer -> scan o input primer
+    CmdScan input primer -> scan o primer input
     _                    -> return ()
 
 
