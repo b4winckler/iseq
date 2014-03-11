@@ -9,16 +9,24 @@ data IseqOptions = IseqOptions {
       optVerbose :: Bool
     , optOutput  :: Maybe FilePath
     , optCommand :: Command
-    } deriving (Show)
+    }
+
+type CmdAction = IseqOptions -> IO ()
 
 data Command =
-    CmdAlign { optAlignment :: Alignment }
-  | CmdMerge
-  | CmdScan {
-        optInput  :: FilePath
-      , optPrimer :: String
+    CmdAlign {
+        optAlignment :: Alignment
+      , runAction    :: CmdAction
       }
-  deriving (Show)
+  | CmdMerge { runAction :: CmdAction }
+  | CmdScan {
+        optInput    :: FilePath
+      , optPosition :: Int
+      , optErrors   :: Int
+      , optSkip     :: Int
+      , optPrimer   :: String
+      , runAction   :: IseqOptions -> IO ()
+      }
 
 data Alignment =
     GlobalAlignment

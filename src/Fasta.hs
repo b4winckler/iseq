@@ -4,10 +4,12 @@ module Fasta (
   , fastaQuality
   , fastaSequence
   , readFasta
+  , showFasta
   ) where
 
 -- import Data.List (groupBy, maximumBy, group, sort, transpose)
 -- import Data.Function (on)
+import Data.Maybe (isJust, fromJust)
 import qualified Data.ByteString.Lazy.Char8 as B
 
 
@@ -93,9 +95,16 @@ parseFasta = go . B.lines
 -- representativeHeader ((Fasta hdr _):_) = hdr
 -- representativeHeader _ = B.pack ">no_header"
 
+-- Read file lazily and parse it as FASTA or FASTQ
 readFasta :: FilePath -> IO [Fasta]
 readFasta path = do
   bs <- B.readFile path
   return $ if not (B.null bs) && B.head bs == '>'
               then parseFasta bs
               else parseFastq bs
+
+
+showFasta :: Fasta -> B.ByteString
+showFasta (Fasta h s q)
+  | isJust q  = B.unlines [h, s, B.pack "+", fromJust q]
+  | otherwise = B.unlines [h, s]

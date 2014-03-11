@@ -1,39 +1,65 @@
 {-# LANGUAGE BangPatterns #-}
 
-module Scan (bestMatchWithin, editDist, scan) where
+module Scan (scan) where
 
 import Data.List (tails, minimumBy)
 import Data.Ord (comparing)
-import Control.Monad (forM_)
+import Control.Monad (forM_, when)
 import qualified Data.ByteString.Lazy.Char8 as B
 
 import Options
 import Fasta
 
 
--- Find position within n characters from start of y that minimizes edit
--- distance to x.
-bestMatchWithin :: Eq a => Int -> [a] -> [a] -> (Int, Int)
-bestMatchWithin n x y = minimumBy (comparing snd) $ zip [1..] distances
+-- Find best match within 'pos' elements from the start of 'y' that minimizes
+-- the edit distance to 'x'.  If edit distance exceeds 'maxErr' then abort the
+-- search.
+bestMatch:: Eq a => Int -> Int -> [a] -> [a] -> (Int, Int)
+bestMatch maxErr pos x y = minimumBy (comparing snd) $ zip [1..] distances
   where
-    distances = map (editDist x) (take (max 1 $ n+1) $ tails y)
+    distances = map (editDist e x) (take p $ tails y)
+    e         = max 0 maxErr
+    p         = max 1 (pos + 1)
 
 
--- Edit distance between two lists
-editDist :: Eq a => [a] -> [a] -> Int
-editDist = go 0
+-- Calculate edit distance between 'x' and 'y'.  If edit distance exceeds
+-- 'maxErr' then abort the search.  The time complexity in 'maxErr' is
+-- exponential in the current implementation, so choose it small (e.g. 2).
+editDist :: Eq a => Int -> [a] -> [a] -> Int
+editDist maxErr = go 0
   where
     go !n []        _         = n
     go !n xs        []        = n + length xs
     go !n xa@(x:xs) ya@(y:ys)
-        | x == y    = go n xs ys
-        | otherwise = minimum [ go (n+1) xa ys   -- deletion
-                              , go (n+1) xs ya   -- insertion
-                              , go (n+1) xs ys ] -- substitution
+        | n > maxErr  = n
+        | x == y      = go n xs ys
+        | otherwise   = minimum [ go (n+1) xa ys   -- deletion
+                                , go (n+1) xs ya   -- insertion
+                                , go (n+1) xs ys ] -- substitution
 
 
-scan :: IseqOptions -> String -> FilePath -> IO ()
-scan _ primer path = do
-  entries <- readFasta path
+scan :: IseqOptions -> IO ()
+scan opt = do
+  let lopt    = optCommand opt
+      opath   = optInput lopt
+      oprimer = optPrimer lopt
+      opos    = optPosition lopt
+      oerr    = optErrors lopt
+      oskip   = max 0 $ optSkip lopt
+
+  entries <- readFasta opath
   forM_ entries $ \entry -> do
-    print $ bestMatchWithin 2 primer (B.unpack $ fastaSequence entry)
+    let sequence   = drop oskip $ B.unpack $ fastaSequence entry
+        (p, score) = bestMatch oerr opos oprimer sequence
+        pos        = p + oskip
+    when (score <= oerr) $ do
+      let out = entry { fastaHeader = B.unwords [
+            fastaHeader entry
+          , keyval "primer-pos" (show pos)
+          , keyval "primer-err" (show score)
+          ] }
+      B.putStr (showFasta out)
+
+
+keyval :: String -> String -> B.ByteString
+keyval k v = B.pack $ k ++ "=" ++ v
