@@ -22,20 +22,23 @@ bestMatch maxErr shift x y = minimumBy (comparing snd) $ zip [1..] distances
     k         = max 1 (shift + 1)
 
 
--- Calculate edit distance between 'x' and 'y'.  If edit distance exceeds
+-- Calculate edit distance between two lists.  If edit distance exceeds
 -- 'maxErr' then abort the search.  The time complexity in 'maxErr' is
 -- exponential in the current implementation, so choose it small (e.g. 2).
 editDist :: Eq a => Int -> [a] -> [a] -> Int
-editDist maxErr = go 0
+editDist maxErr' xs' = go 0 xs'
   where
+    -- Assumption: the first list is typically shorter than the second
+    maxErr = min maxErr' $ length xs'
+
     go !n []        _         = n
     go !n xs        []        = n + length xs
     go !n xa@(x:xs) ya@(y:ys)
-        | n > maxErr  = n
+        | n > maxErr  = n   -- Optimization: don't recurse too much
         | x == y      = go n xs ys
-        | otherwise   = minimum [ go (n+1) xa ys   -- deletion
+        | otherwise   = minimum [ go (n+1) xs ys   -- substitution
                                 , go (n+1) xs ya   -- insertion
-                                , go (n+1) xs ys ] -- substitution
+                                , go (n+1) xa ys ] -- deletion
 
 
 scan :: IseqOptions -> IO ()
