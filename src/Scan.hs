@@ -11,15 +11,15 @@ import Options
 import Fasta
 
 
--- Find best match within 'pos' elements from the start of 'y' that minimizes
+-- Find best match within 'shift' elements from the start of 'y' that minimizes
 -- the edit distance to 'x'.  If edit distance exceeds 'maxErr' then abort the
 -- search.
 bestMatch :: Eq a => Int -> Int -> [a] -> [a] -> (Int, Int)
-bestMatch maxErr pos x y = minimumBy (comparing snd) $ zip [1..] distances
+bestMatch maxErr shift x y = minimumBy (comparing snd) $ zip [1..] distances
   where
-    distances = map (editDist e x) (take p $ tails y)
+    distances = map (editDist e x) (take k $ tails y)
     e         = max 0 maxErr
-    p         = max 1 (pos + 1)
+    k         = max 1 (shift + 1)
 
 
 -- Calculate edit distance between 'x' and 'y'.  If edit distance exceeds
@@ -43,14 +43,14 @@ scan opt = do
   let lopt    = optCommand opt
       opath   = optInput lopt
       oprimer = optPrimer lopt
-      opos    = optPosition lopt
+      oshift  = optShift lopt
       oerr    = optErrors lopt
       oskip   = max 0 $ optSkip lopt
 
   entries <- readFasta opath
   forM_ entries $ \entry -> do
     let sequence   = drop oskip $ B.unpack $ fastaSequence entry
-        (p, score) = bestMatch oerr opos oprimer sequence
+        (p, score) = bestMatch oerr oshift oprimer sequence
         pos        = p + oskip
     when (score <= oerr) $ do
       let out = entry { fastaHeader = B.unwords [

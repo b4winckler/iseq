@@ -20,12 +20,12 @@ data Command =
       }
   | CmdMerge { runAction :: CmdAction }
   | CmdScan {
-        optInput    :: FilePath
-      , optPosition :: Int
-      , optErrors   :: Int
-      , optSkip     :: Int
-      , optPrimer   :: String
-      , runAction   :: IseqOptions -> IO ()
+        optInput  :: FilePath
+      , optShift  :: Int
+      , optErrors :: Int
+      , optSkip   :: Int
+      , optPrimer :: String
+      , runAction :: IseqOptions -> IO ()
       }
 
 data Alignment =

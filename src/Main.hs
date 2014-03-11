@@ -23,10 +23,12 @@ parser = IseqOptions
   <$> switch (long "verbose" <> help "Be verbose")
   <*> optional (strOption (long "output" <> help "Output path"))
   <*> subparser (
-        command "align" (info alignOptParser $
+        command "align" (info (helper <*> alignOptParser) $
             progDesc "Align against database")
-    <>  command "merge" (info mergeOptParser $ progDesc "Merge paired reads")
-    <>  command "scan" (info scanOptParser $ progDesc "Scan for primer")
+    <>  command "merge" (info (helper <*> mergeOptParser) $
+            progDesc "Merge paired reads")
+    <>  command "scan" (info (helper <*> scanOptParser) $
+            progDesc "Scan for primer")
     )
 
 
@@ -45,8 +47,8 @@ scanOptParser :: Parser Command
 scanOptParser = CmdScan
   <$> strOption (long "input" <> value "/dev/stdin" <> metavar "PATH"
       <> help "Fasta file to scan")
-  <*> option (long "position" <> value 0 <> metavar "N"
-      <> help "Primer start is located within N bases")
+  <*> option (long "shift" <> value 0 <> metavar "N"
+      <> help "Allow primer position to be shifted up to N bases")
   <*> option (long "errors" <> value 0 <> metavar "N"
       <> help "Allow at most N primer errors")
   <*> option (long "skip" <> value 0 <> metavar "N"
