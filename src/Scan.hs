@@ -14,7 +14,7 @@ import Fasta
 -- Find best match within 'pos' elements from the start of 'y' that minimizes
 -- the edit distance to 'x'.  If edit distance exceeds 'maxErr' then abort the
 -- search.
-bestMatch:: Eq a => Int -> Int -> [a] -> [a] -> (Int, Int)
+bestMatch :: Eq a => Int -> Int -> [a] -> [a] -> (Int, Int)
 bestMatch maxErr pos x y = minimumBy (comparing snd) $ zip [1..] distances
   where
     distances = map (editDist e x) (take p $ tails y)

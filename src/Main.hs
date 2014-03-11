@@ -29,14 +29,17 @@ parser = IseqOptions
     <>  command "scan" (info scanOptParser $ progDesc "Scan for primer")
     )
 
+
 alignOptParser :: Parser Command
 alignOptParser = CmdAlign
   <$> flag GlobalAlignment LocalAlignment (
         long "local" <> help "local alignment")
   <*> pure undefined
 
+
 mergeOptParser :: Parser Command
 mergeOptParser = CmdMerge <$> pure undefined
+
 
 scanOptParser :: Parser Command
 scanOptParser = CmdScan
