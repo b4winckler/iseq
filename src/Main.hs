@@ -3,19 +3,26 @@ module Main where
 import Control.Applicative ((<$>), (<*>), pure)
 import Options.Applicative ((<>), optional, Parser, command, info,
                             execParser, strOption, help, switch, help, helper,
-                            fullDesc, progDesc, long, header, str, option,
-                            subparser, flag, value, argument, metavar)
+                            fullDesc, progDesc, long, str, option,
+                            subparser, flag, value, argument, metavar,
+                            infoOption)
 
 import Options
 import Scan (scan)
+import Paths_iseq (version)
+import Data.Version (showVersion)
 
 
 
 main :: IO ()
 main = do
-  o <- execParser (info (helper <*> parser)
-      (fullDesc <> header "Tools for processing Illumina ?iSeq data"))
+  o <- execParser (info (helper <*> versionParser <*> parser) fullDesc)
   runAction (optCommand o) o
+
+
+versionParser :: Parser (a -> a)
+versionParser = infoOption ("iseq v" ++ showVersion version)
+    (long "version" <> help "Show version")
 
 
 parser :: Parser IseqOptions
