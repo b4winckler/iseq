@@ -1,17 +1,18 @@
+{-# LANGUAGE CPP #-}
 module Main where
 
-import Control.Applicative ((<$>), (<*>), pure)
-import Options.Applicative ((<>), optional, Parser, command, info,
-                            execParser, strOption, help, switch, help, helper,
-                            fullDesc, progDesc, long, str, option,
-                            subparser, flag, value, argument, metavar,
-                            infoOption)
+import Data.Version (showVersion)
+import Options.Applicative
 
 import Options
-import Scan (scan)
 import Paths_iseq (version)
-import Data.Version (showVersion)
+import Scan (scan)
 
+#if __GLASGOW_HASKELL__ <= 702
+import Data.Monoid
+(<>) :: Monoid a => a -> a -> a
+(<>) = mappend
+#endif
 
 
 main :: IO ()
