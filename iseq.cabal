@@ -21,3 +21,5 @@ executable iseq
   build-depends:      base                  >= 4.3
                     , optparse-applicative  >= 0.7
                     , bytestring            >= 0.9
+                    , filepath              >= 1.2
+                    , directory             >= 1.1

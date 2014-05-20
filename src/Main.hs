@@ -30,7 +30,6 @@ versionParser = infoOption ("iseq v" ++ showVersion version)
 parser :: Parser IseqOptions
 parser = IseqOptions
   <$> switch (long "verbose" <> help "Be verbose")
-  <*> optional (strOption (long "output" <> help "Output path"))
   <*> subparser (
         command "align" (info (helper <*> alignOptParser) $
             progDesc "Align against database")
@@ -71,6 +70,8 @@ splitOptParser :: Parser Command
 splitOptParser = CmdSplit
   <$> strOption (long "input" <> value "/dev/stdin" <> metavar "PATH"
       <> help "Fasta file to scan [stdin]")
+  <*> optional (strOption (long "output" <> metavar "PATH"
+      <> help "Output path"))
   <*> strOption (long "barcodes" <> metavar "PATH"
       <> help "Fasta file with sample barcodes")
   <*> pure split

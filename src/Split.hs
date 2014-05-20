@@ -3,7 +3,9 @@ module Split (split) where
 
 import Control.Monad (forM_)
 import System.IO (stderr, hPutStrLn, openFile, IOMode (..))
+import System.Directory (createDirectoryIfMissing)
 import Data.Maybe (fromMaybe)
+import qualified System.FilePath as Path
 import qualified Data.ByteString.Lazy.Char8 as B
 
 import Options
@@ -17,8 +19,7 @@ split opt = do
   let lopt      = optCommand opt
       opath     = optInput lopt
       obarcodes = optBarcodes lopt
-
-  logStrLn $ "Reading input from " ++ opath ++", barcodes from " ++ obarcodes
+      opathout  = optOutput lopt
 
   entries <- readFasta opath
   bcfasta <- readFasta obarcodes
@@ -32,8 +33,9 @@ split opt = do
   -- Open all file handles before writing to avoid having to reopen them all
   -- the time.  The downside to this is that a file is created for each sample,
   -- even if they are not present in the input.
-  fileHandles <- mapM (flip openFile WriteMode) fileNames
-  unknownHandle <- openFile unkownName WriteMode
+  withMaybe opathout $ createDirectoryIfMissing True
+  fileHandles <- mapM (flip openFile WriteMode . prependPath opathout) fileNames
+  unknownHandle <- openFile (prependPath opathout unkownName) WriteMode
 
   let bc2fh = zip barcodes fileHandles
 
@@ -42,6 +44,10 @@ split opt = do
     B.hPut fh $ showFasta entry
 
 
+withMaybe :: Monad m => Maybe a -> (a -> m ()) -> m ()
+withMaybe m f = case m of
+  Just a  -> f a
+  Nothing -> return ()
 
 fastaBarcode :: Fasta -> Barcode
 fastaBarcode = last . B.split ':' . fastaHeader
@@ -54,3 +60,6 @@ fileExtension _      = ".fasta"
 
 logStrLn :: String -> IO ()
 logStrLn = hPutStrLn stderr
+
+prependPath :: Maybe FilePath -> FilePath -> FilePath
+prependPath base file = maybe file (flip Path.combine file) base

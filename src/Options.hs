@@ -7,7 +7,6 @@ module Options (
 
 data IseqOptions = IseqOptions {
       optVerbose :: Bool
-    , optOutput  :: Maybe FilePath
     , optCommand :: Command
     }
 
@@ -29,6 +28,7 @@ data Command =
       }
   | CmdSplit {
         optInput    :: FilePath
+      , optOutput   :: Maybe FilePath
       , optBarcodes :: FilePath
       , runAction   :: IseqOptions -> IO ()
       }
