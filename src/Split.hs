@@ -1,10 +1,9 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Split (split) where
 
-import Control.Applicative ((<$>))
-import Control.Monad (forM)
-import System.IO (stderr, hPutStrLn)
-import Data.List (sort, group)
+import Control.Monad (forM_)
+import System.IO (stderr, hPutStrLn, openFile, IOMode (..))
+import Data.Maybe (fromMaybe)
 import qualified Data.ByteString.Lazy.Char8 as B
 
 import Options
@@ -19,32 +18,33 @@ split opt = do
       opath     = optInput lopt
       obarcodes = optBarcodes lopt
 
-  bc2name <- map (\x -> (fastaSequence x, fastaHeader x)) <$>
-             readFasta obarcodes
+  logStrLn $ "Reading input from " ++ opath ++", barcodes from " ++ obarcodes
 
   entries <- readFasta opath
-  let ext = fileExtension entries
+  bcfasta <- readFasta obarcodes
 
-  fnames <- forM entries $ \entry -> do
-    -- TODO: B.tail will fail if header is empty string
-    let sample = maybe "unkown" B.tail $ lookup (fastaBarcode entry) bc2name
-        fname  = B.unpack $ B.append sample ext
-    B.appendFile fname $ showFasta entry
-    return fname
+  let barcodes = map fastaSequence bcfasta
+      sampleNames = map (B.tail . fastaHeader) bcfasta
+      ext = fileExtension entries
+      fileNames = map (B.unpack . (`B.append` ext)) sampleNames
+      unkownName = B.unpack $ B.append "unknown" ext
 
-  logStrLn "Number of reads and filenames that were written:"
-  mapM_ (logStrLn . showStats) $ collate fnames
+  -- Open all file handles before writing to avoid having to reopen them all
+  -- the time.  The downside to this is that a file is created for each sample,
+  -- even if they are not present in the input.
+  fileHandles <- mapM (flip openFile WriteMode) fileNames
+  unknownHandle <- openFile unkownName WriteMode
 
-  where
-    showStats (fn,c) = let sc = show c
-                       in "    " ++ sc ++ replicate (12 - length sc) ' ' ++ fn
+  let bc2fh = zip barcodes fileHandles
+
+  forM_ entries $ \entry -> do
+    let fh = fromMaybe unknownHandle $ lookup (fastaBarcode entry) bc2fh
+    B.hPut fh $ showFasta entry
 
 
 
--- TODO: must ensure that fasta header ends with ':barcode'
 fastaBarcode :: Fasta -> Barcode
 fastaBarcode = last . B.split ':' . fastaHeader
-
 
 fileExtension :: [Fasta] -> B.ByteString
 fileExtension (fa:_) = case (fastaQuality fa) of
@@ -52,10 +52,5 @@ fileExtension (fa:_) = case (fastaQuality fa) of
                          Nothing  -> ".fasta"
 fileExtension _      = ".fasta"
 
-
 logStrLn :: String -> IO ()
 logStrLn = hPutStrLn stderr
-
-
-collate :: [String] -> [(String, Int)]
-collate = map (\xs -> (head xs, length xs)) . group . sort
