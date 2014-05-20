@@ -27,6 +27,11 @@ data Command =
       , optPrimer :: String
       , runAction :: IseqOptions -> IO ()
       }
+  | CmdSplit {
+        optInput    :: FilePath
+      , optBarcodes :: FilePath
+      , runAction   :: IseqOptions -> IO ()
+      }
 
 data Alignment =
     GlobalAlignment

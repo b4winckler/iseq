@@ -7,6 +7,7 @@ import Options.Applicative
 import Options
 import Paths_iseq (version)
 import Scan (scan)
+import Split (split)
 
 #if __GLASGOW_HASKELL__ <= 702
 import Data.Monoid
@@ -37,6 +38,8 @@ parser = IseqOptions
             progDesc "Merge paired reads")
     <>  command "scan" (info (helper <*> scanOptParser) $
             progDesc "Scan for primer")
+    <> command "split" (info (helper <*> splitOptParser) $
+            progDesc "Split by sample barcodes")
     )
 
 
@@ -63,3 +66,11 @@ scanOptParser = CmdScan
       <> help "Skip first N bases before starting scan")
   <*> argument str (metavar "PRIMER" <> help "Primer sequence to scan for")
   <*> pure scan
+
+splitOptParser :: Parser Command
+splitOptParser = CmdSplit
+  <$> strOption (long "input" <> value "/dev/stdin" <> metavar "PATH"
+      <> help "Fasta file to scan [stdin]")
+  <*> strOption (long "barcodes" <> metavar "PATH"
+      <> help "Fasta file with sample barcodes")
+  <*> pure split
