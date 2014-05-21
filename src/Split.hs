@@ -2,7 +2,7 @@
 module Split (split) where
 
 import Control.Monad (forM_)
-import System.IO (stderr, hPutStrLn, openFile, IOMode (..))
+import System.IO (stderr, hPutStrLn, openFile, IOMode (..), hClose)
 import System.Directory (createDirectoryIfMissing)
 import Data.Maybe (fromMaybe)
 import qualified System.FilePath as Path
@@ -28,20 +28,23 @@ split opt = do
       sampleNames = map (B.tail . fastaHeader) bcfasta
       ext = fileExtension entries
       fileNames = map (B.unpack . (`B.append` ext)) sampleNames
-      unkownName = B.unpack $ B.append "unknown" ext
+      unknownName = B.unpack $ B.append "unknown" ext
 
   -- Open all file handles before writing to avoid having to reopen them all
   -- the time.  The downside to this is that a file is created for each sample,
   -- even if they are not present in the input.
   withMaybe opathout $ createDirectoryIfMissing True
   fileHandles <- mapM (flip openFile WriteMode . prependPath opathout) fileNames
-  unknownHandle <- openFile (prependPath opathout unkownName) WriteMode
+  unknownHandle <- openFile (prependPath opathout unknownName) WriteMode
 
   let bc2fh = zip barcodes fileHandles
 
   forM_ entries $ \entry -> do
-    let fh = fromMaybe unknownHandle $ lookup (fastaBarcode entry) bc2fh
+    let bc = fastaBarcode entry
+        fh = fromMaybe unknownHandle $ lookup bc bc2fh
     B.hPut fh $ showFasta entry
+
+  mapM_ hClose (unknownHandle:fileHandles)
 
 
 withMaybe :: Monad m => Maybe a -> (a -> m ()) -> m ()
