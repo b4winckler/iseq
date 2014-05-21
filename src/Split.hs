@@ -16,13 +16,10 @@ type Barcode = B.ByteString
 
 split :: IseqOptions -> IO ()
 split opt = do
-  let lopt      = optCommand opt
-      opath     = optInput lopt
-      obarcodes = optBarcodes lopt
-      opathout  = optOutput lopt
+  let lopt = optCommand opt
 
-  entries <- readFasta opath
-  bcfasta <- readFasta obarcodes
+  entries <- readFasta $ optInput lopt
+  bcfasta <- readFasta $ optBarcodes lopt
 
   let barcodes = map fastaSequence bcfasta
       sampleNames = map (B.tail . fastaHeader) bcfasta
@@ -33,6 +30,7 @@ split opt = do
   -- Open all file handles before writing to avoid having to reopen them all
   -- the time.  The downside to this is that a file is created for each sample,
   -- even if they are not present in the input.
+  let opathout  = optOutput lopt
   withMaybe opathout $ createDirectoryIfMissing True
   fileHandles <- mapM (flip openFile WriteMode . prependPath opathout) fileNames
   unknownHandle <- openFile (prependPath opathout unknownName) WriteMode
