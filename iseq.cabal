@@ -2,7 +2,7 @@
 -- see http://haskell.org/cabal/users-guide/
 
 name:                iseq
-version:             0.1.0.0
+version:             0.2.0
 synopsis:            Tools for processing Illumina ?iSeq data
 homepage:            github.com/b4winckler/iseq
 license:             BSD3
