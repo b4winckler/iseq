@@ -11,34 +11,36 @@ import Options
 import Fasta
 
 
--- Find best match within 'shift' elements from the start of 'y' that minimizes
--- the edit distance to 'x'.  If edit distance exceeds 'maxErr' then abort the
--- search.
-bestMatch :: Eq a => Int -> Int -> [a] -> [a] -> (Int, Int)
-bestMatch maxErr shift x y = minimumBy (comparing snd) $ zip [1..] distances
+-- Find best match starting within 'shift' elements from the beginning of 'y'
+-- that minimizes the edit distance to 'x'.  If edit distance exceeds 'maxErr'
+-- then abort the search.
+bestMatch :: Eq a => Int -> Int -> [a] -> [a] -> (Int, Int, Int)
+bestMatch maxErr shift primer y = (nerr, nshift, nmatch)
   where
-    distances = map (editDist e x) (take k $ tails y)
-    e         = max 0 maxErr
-    k         = max 1 (shift + 1)
+    (nshift,(nerr,nmatch)) = minimumBy (comparing (fst . snd)) $ zip [0..] shifts
+    shifts = map (editDist e primer) (take k $ tails y)
+    e = max 0 maxErr
+    k = max 1 (shift + 1)
 
 
--- Calculate edit distance between two lists.  If edit distance exceeds
--- 'maxErr' then abort the search.  The time complexity in 'maxErr' is
--- exponential in the current implementation, so choose it small (e.g. 2).
-editDist :: Eq a => Int -> [a] -> [a] -> Int
-editDist maxErr' xs' = go 0 xs'
+-- Calculate edit distance to 'primer'.  If edit distance exceeds 'maxErr' then
+-- abort the search.  The time complexity in 'maxErr' is exponential in the
+-- current implementation, so choose it small (e.g. 2).
+-- Return '(nerr,nmatch)', where 'nerr' is the number of errors and 'nmatch' is
+-- the number of elements that "matched" the primer (up to
+-- substitution/insertion/deletion).
+editDist :: Eq a => Int -> [a] -> [a] -> (Int, Int)
+editDist maxErr primer = go 0 0 primer
   where
-    -- Assumption: the first list is typically shorter than the second
-    maxErr = min maxErr' $ length xs'
-
-    go !n []        _         = n
-    go !n xs        []        = n + length xs
-    go !n xa@(x:xs) ya@(y:ys)
-        | n > maxErr  = n   -- Optimization: don't recurse too much
-        | x == y      = go n xs ys
-        | otherwise   = minimum [ go (n+1) xs ys   -- substitution
-                                , go (n+1) xs ya   -- insertion
-                                , go (n+1) xa ys ] -- deletion
+    go !nerr !nmatch [] _ = (nerr, nmatch)
+    go !nerr !nmatch xs [] = (nerr + length xs, nmatch)
+    go !nerr !nmatch xa@(x:xs) ya@(y:ys)
+        | nerr > maxErr = (nerr, nmatch)            -- give up
+        | x == y = go nerr (nmatch+1) xs ys         -- exact match
+        | otherwise = minimumBy (comparing fst) [
+              go (nerr+1) (nmatch+1) xs ys          -- substitution
+            , go (nerr+1) nmatch     xs ya          -- insertion
+            , go (nerr+1) (nmatch+1) xa ys ]        -- deletion
 
 
 scan :: IseqOptions -> IO ()
@@ -52,16 +54,20 @@ scan opt = do
 
   entries <- readFasta opath
   forM_ entries $ \entry -> do
-    let sequence   = drop oskip $ B.unpack $ fastaSequence entry
-        (p, score) = bestMatch oerr oshift oprimer sequence
-        pos        = p + oskip
-    when (score <= oerr) $ do
-      let out = entry { fastaHeader = B.unwords [
-            fastaHeader entry
-          , keyval "primer-pos" (show pos)
-          , keyval "primer-err" (show score)
-          ] }
-      B.putStr (showFasta out)
+    let sequence = B.unpack $ fastaSequence entry
+        (nerr, nshift, nmatch) = bestMatch oerr oshift oprimer
+            $ drop oskip sequence
+    when (nerr <= oerr) $ do
+      let hdr = B.unwords [
+                fastaHeader entry
+              , keyval "skip" $ take oskip sequence
+              , keyval "shift" $ take nshift $ drop oskip sequence
+              , keyval "primer" $ take nmatch $ drop (oskip+nshift) sequence
+              , keyval "primer_err" $ show nerr]
+          sqn = B.pack $ drop (oskip+nshift+nmatch) sequence
+          qual = fmap (B.drop (fromIntegral $ oskip+nshift+nmatch)) (fastaQuality entry)
+
+      B.putStr $ showFasta $ Fasta hdr sqn qual
 
 
 keyval :: String -> String -> B.ByteString

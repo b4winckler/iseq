@@ -56,7 +56,7 @@ mergeOptParser = CmdMerge <$> pure undefined
 scanOptParser :: Parser Command
 scanOptParser = CmdScan
   <$> strOption (long "input" <> value "/dev/stdin" <> metavar "PATH"
-      <> help "Fasta file to scan")
+      <> help "Fasta file to scan for primer")
   <*> option (long "shift" <> value 0 <> metavar "N"
       <> help "Allow primer position to be shifted up to N bases")
   <*> option (long "errors" <> value 0 <> metavar "N"

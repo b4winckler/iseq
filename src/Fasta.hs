@@ -1,8 +1,5 @@
 module Fasta (
-    Fasta
-  , fastaHeader
-  , fastaQuality
-  , fastaSequence
+    Fasta(..)
   , readFasta
   , showFasta
   ) where
