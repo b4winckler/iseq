@@ -2,7 +2,7 @@
 module Split (split) where
 
 import Control.Monad (forM_)
-import System.IO (stderr, hPutStrLn, openFile, IOMode (..), hClose)
+import System.IO (openFile, IOMode (..), hClose)
 import System.Directory (createDirectoryIfMissing)
 import Data.Maybe (fromMaybe)
 import qualified System.FilePath as Path
@@ -58,9 +58,6 @@ fileExtension (fa:_) = case (fastaQuality fa) of
                          (Just _) -> ".fastq"
                          Nothing  -> ".fasta"
 fileExtension _      = ".fasta"
-
-logStrLn :: String -> IO ()
-logStrLn = hPutStrLn stderr
 
 prependPath :: Maybe FilePath -> FilePath -> FilePath
 prependPath base file = maybe file (flip Path.combine file) base
