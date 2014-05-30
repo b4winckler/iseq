@@ -1,6 +1,6 @@
 {-# LANGUAGE BangPatterns #-}
 
-module Scan (scan) where
+module Strip (strip) where
 
 import Data.List (tails, minimumBy)
 import Data.Ord (comparing)
@@ -43,8 +43,8 @@ editDist maxErr primer = go 0 0 primer
             , go (nerr+1) (nmatch+1) xa ys ]        -- deletion
 
 
-scan :: IseqOptions -> IO ()
-scan opt = do
+strip :: IseqOptions -> IO ()
+strip opt = do
   let lopt    = optCommand opt
       opath   = optInput lopt
       oprimer = optPrimer lopt

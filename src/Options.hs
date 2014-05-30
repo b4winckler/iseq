@@ -18,7 +18,7 @@ data Command =
       , runAction    :: CmdAction
       }
   | CmdMerge { runAction :: CmdAction }
-  | CmdScan {
+  | CmdStrip {
         optInput  :: FilePath
       , optShift  :: Int
       , optErrors :: Int

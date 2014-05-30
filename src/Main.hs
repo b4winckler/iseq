@@ -6,7 +6,7 @@ import Options.Applicative
 
 import Options
 import Paths_iseq (version)
-import Scan (scan)
+import Strip (strip)
 import Split (split)
 
 #if __GLASGOW_HASKELL__ <= 702
@@ -35,8 +35,8 @@ parser = IseqOptions
             progDesc "Align against database")
     <>  command "merge" (info (helper <*> mergeOptParser) $
             progDesc "Merge paired reads")
-    <>  command "scan" (info (helper <*> scanOptParser) $
-            progDesc "Scan for primer")
+    <>  command "strip" (info (helper <*> stripOptParser) $
+            progDesc "Strip primer from input")
     <> command "split" (info (helper <*> splitOptParser) $
             progDesc "Split by sample barcodes")
     )
@@ -53,18 +53,18 @@ mergeOptParser :: Parser Command
 mergeOptParser = CmdMerge <$> pure undefined
 
 
-scanOptParser :: Parser Command
-scanOptParser = CmdScan
+stripOptParser :: Parser Command
+stripOptParser = CmdStrip
   <$> strOption (long "input" <> value "/dev/stdin" <> metavar "PATH"
-      <> help "Fasta file to scan for primer")
+      <> help "Fasta file to strip primers from")
   <*> option (long "shift" <> value 0 <> metavar "N"
       <> help "Allow primer position to be shifted up to N bases")
   <*> option (long "errors" <> value 0 <> metavar "N"
       <> help "Allow at most N primer errors")
   <*> option (long "skip" <> value 0 <> metavar "N"
-      <> help "Skip first N bases before starting scan")
+      <> help "Skip first N bases before starting primer scan")
   <*> argument str (metavar "PRIMER" <> help "Primer sequence to scan for")
-  <*> pure scan
+  <*> pure strip
 
 splitOptParser :: Parser Command
 splitOptParser = CmdSplit
