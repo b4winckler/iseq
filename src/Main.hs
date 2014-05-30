@@ -69,7 +69,7 @@ scanOptParser = CmdScan
 splitOptParser :: Parser Command
 splitOptParser = CmdSplit
   <$> strOption (long "input" <> value "/dev/stdin" <> metavar "PATH"
-      <> help "Fasta file to scan [stdin]")
+      <> help "Fasta file to split [stdin]")
   <*> optional (strOption (long "output" <> metavar "PATH"
       <> help "Output path"))
   <*> strOption (long "barcodes" <> metavar "PATH"
