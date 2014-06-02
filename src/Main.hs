@@ -29,28 +29,12 @@ versionParser = infoOption ("iseq v" ++ showVersion version)
 
 parser :: Parser IseqOptions
 parser = IseqOptions
-  <$> switch (long "verbose" <> help "Be verbose")
-  <*> subparser (
-        command "align" (info (helper <*> alignOptParser) $
-            progDesc "Align against database")
-    <>  command "merge" (info (helper <*> mergeOptParser) $
-            progDesc "Merge paired reads")
-    <>  command "strip" (info (helper <*> stripOptParser) $
+  <$> subparser (
+       command "strip" (info (helper <*> stripOptParser) $
             progDesc "Strip primer from input")
     <> command "split" (info (helper <*> splitOptParser) $
             progDesc "Split by sample barcodes")
     )
-
-
-alignOptParser :: Parser Command
-alignOptParser = CmdAlign
-  <$> flag GlobalAlignment LocalAlignment (
-        long "local" <> help "local alignment")
-  <*> pure undefined
-
-
-mergeOptParser :: Parser Command
-mergeOptParser = CmdMerge <$> pure undefined
 
 
 stripOptParser :: Parser Command

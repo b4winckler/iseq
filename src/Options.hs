@@ -1,41 +1,28 @@
 module Options (
     IseqOptions(..)
   , Command(..)
-  , Alignment(..)
   ) where
 
 
 data IseqOptions = IseqOptions {
-      optVerbose :: Bool
-    , optCommand :: Command
+      optCommand :: Command
     }
 
 type CmdAction = IseqOptions -> IO ()
 
 data Command =
-    CmdAlign {
-        optAlignment :: Alignment
-      , runAction    :: CmdAction
-      }
-  | CmdMerge { runAction :: CmdAction }
-  | CmdStrip {
+    CmdStrip {
         optInput   :: FilePath
       , optShift   :: Int
       , optErrors  :: Int
       , optSkip    :: Int
       , optReverse :: Bool
       , optPrimer  :: String
-      , runAction  :: IseqOptions -> IO ()
+      , runAction  :: CmdAction
       }
   | CmdSplit {
         optInput    :: FilePath
       , optOutput   :: Maybe FilePath
       , optBarcodes :: FilePath
-      , runAction   :: IseqOptions -> IO ()
+      , runAction   :: CmdAction
       }
-
-data Alignment =
-    GlobalAlignment
-  | LocalAlignment
-  deriving (Show, Eq)
-
