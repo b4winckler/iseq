@@ -47,28 +47,29 @@ strip :: IseqOptions -> IO ()
 strip opt = do
   let lopt    = optCommand opt
       opath   = optInput lopt
-      oprimer = optPrimer lopt
       oshift  = optShift lopt
       oerr    = optErrors lopt
       oskip   = max 0 $ optSkip lopt
+      orev    = optReverse lopt
+      order   = if orev then reverse else id
+      oprimer = order $ optPrimer lopt
+      keyval k v = B.pack $ (if orev then 'r':k else k) ++ "=" ++ v
 
   entries <- readFasta opath
   forM_ entries $ \entry -> do
-    let sequence = B.unpack $ fastaSequence entry
+    let sequence = order $ B.unpack $ fastaSequence entry
+        quality = fmap (order . B.unpack) $ fastaQuality entry
         (nerr, nshift, nmatch) = bestMatch oerr oshift oprimer
-            $ drop oskip sequence
+                               $ drop oskip sequence
     when (nerr <= oerr) $ do
       let hdr = B.unwords [
                 fastaHeader entry
-              , keyval "skip" $ take oskip sequence
-              , keyval "shift" $ take nshift $ drop oskip sequence
-              , keyval "primer" $ take nmatch $ drop (oskip+nshift) sequence
-              , keyval "primer_err" $ show nerr]
-          sqn = B.pack $ drop (oskip+nshift+nmatch) sequence
-          qual = fmap (B.drop (fromIntegral $ oskip+nshift+nmatch)) (fastaQuality entry)
+              , keyval "skip" $ order $ take oskip sequence
+              , keyval "shift" $ order $ take nshift $ drop oskip sequence
+              , keyval "primer" $ order $ take nmatch
+                                $ drop (oskip+nshift) sequence
+              , keyval "primer_err" $ show nerr ]
+          sqn = B.pack $ order $ drop (oskip+nshift+nmatch) sequence
+          qual = fmap (B.pack . order . drop (oskip+nshift+nmatch)) quality
 
       B.putStr $ showFasta $ Fasta hdr sqn qual
-
-
-keyval :: String -> String -> B.ByteString
-keyval k v = B.pack $ k ++ "=" ++ v

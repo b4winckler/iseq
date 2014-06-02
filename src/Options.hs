@@ -19,12 +19,13 @@ data Command =
       }
   | CmdMerge { runAction :: CmdAction }
   | CmdStrip {
-        optInput  :: FilePath
-      , optShift  :: Int
-      , optErrors :: Int
-      , optSkip   :: Int
-      , optPrimer :: String
-      , runAction :: IseqOptions -> IO ()
+        optInput   :: FilePath
+      , optShift   :: Int
+      , optErrors  :: Int
+      , optSkip    :: Int
+      , optReverse :: Bool
+      , optPrimer  :: String
+      , runAction  :: IseqOptions -> IO ()
       }
   | CmdSplit {
         optInput    :: FilePath

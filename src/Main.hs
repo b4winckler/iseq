@@ -63,6 +63,7 @@ stripOptParser = CmdStrip
       <> help "Allow at most N primer errors")
   <*> option (long "skip" <> value 0 <> metavar "N"
       <> help "Skip first N bases before starting primer scan")
+  <*> switch (long "reverse" <> help "Scan in reverse direction")
   <*> argument str (metavar "PRIMER" <> help "Primer sequence to scan for")
   <*> pure strip
 
