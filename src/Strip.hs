@@ -66,12 +66,15 @@ strip opt = do
     when (nerr <= oerr) $ do
       let hdr = B.unwords $ filter (not . B.null) [
                 fastaHeader entry
-              , keyval "skip" $ order $ take oskip sequence
               , keyval "shift" $ order $ take nshift $ drop oskip sequence
               , keyval "primer" $ order $ take nmatch
                                 $ drop (oskip+nshift) sequence
               , keyval "primer_err" $ show nerr ]
-          sqn = B.pack $ order $ drop (oskip+nshift+nmatch) sequence
-          qual = fmap (B.pack . order . drop (oskip+nshift+nmatch)) quality
+          sqn = B.pack $ order $ dropAt oskip (nshift+nmatch) sequence
+          qual = fmap (B.pack . order . dropAt oskip (nshift+nmatch)) quality
 
       B.putStr $ showFasta $ Fasta hdr sqn qual
+
+
+dropAt :: Int -> Int -> [a] -> [a]
+dropAt n m xs = take n xs ++ drop (n+m) xs
