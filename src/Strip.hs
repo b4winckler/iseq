@@ -53,7 +53,9 @@ strip opt = do
       orev    = optReverse lopt
       order   = if orev then reverse else id
       oprimer = order $ optPrimer lopt
-      keyval k v = B.pack $ (if orev then 'r':k else k) ++ "=" ++ v
+      keyval k v | null v    = B.empty
+                 | orev      = B.pack $ 'r':k ++ '=':v
+                 | otherwise = B.pack $ k ++ '=':v
 
   entries <- readFasta opath
   forM_ entries $ \entry -> do
@@ -62,7 +64,7 @@ strip opt = do
         (nerr, nshift, nmatch) = bestMatch oerr oshift oprimer
                                $ drop oskip sequence
     when (nerr <= oerr) $ do
-      let hdr = B.unwords [
+      let hdr = B.unwords $ filter (not . B.null) [
                 fastaHeader entry
               , keyval "skip" $ order $ take oskip sequence
               , keyval "shift" $ order $ take nshift $ drop oskip sequence
