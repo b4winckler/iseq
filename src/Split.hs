@@ -1,12 +1,13 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Split (split) where
 
+import Control.Exception.Base (bracket)
 import Control.Monad (forM_)
-import System.IO (openFile, IOMode (..), hClose)
-import System.Directory (createDirectoryIfMissing)
 import Data.Maybe (fromMaybe)
-import qualified System.FilePath as Path
+import System.Directory (createDirectoryIfMissing)
+import System.IO (openFile, IOMode (..), hClose)
 import qualified Data.ByteString.Lazy.Char8 as B
+import qualified System.FilePath as Path
 
 import Options
 import Fasta
@@ -32,17 +33,18 @@ split opt = do
   -- even if they are not present in the input.
   let opathout  = optOutput lopt
   withMaybe opathout $ createDirectoryIfMissing True
-  fileHandles <- mapM (flip openFile WriteMode . prependPath opathout) fileNames
-  unknownHandle <- openFile (prependPath opathout unknownName) WriteMode
 
-  let bc2fh = zip barcodes fileHandles
+  let fullNames = map (prependPath opathout) (unknownName:fileNames)
+  withFiles fullNames $ \handles -> do
+    let bc2fh = zip barcodes $ tail handles
+    forM_ entries $ \entry -> do
+      let bc = fastaBarcode entry
+          fh = fromMaybe (head handles) $ lookup bc bc2fh
+      B.hPut fh $ showFasta entry
 
-  forM_ entries $ \entry -> do
-    let bc = fastaBarcode entry
-        fh = fromMaybe unknownHandle $ lookup bc bc2fh
-    B.hPut fh $ showFasta entry
-
-  mapM_ hClose (unknownHandle:fileHandles)
+  where
+    withFiles fnames =
+      bracket (mapM (flip openFile WriteMode) fnames) (mapM_ hClose)
 
 
 withMaybe :: Monad m => Maybe a -> (a -> m ()) -> m ()
